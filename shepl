@@ -6,7 +6,7 @@ local historyfile="$HOME/.cache/shepl"
 touch "$historyfile"
 
 # Capture the stdin and write to a file
-local inputfile="/tmp/shepl"
+local inputfile=$(mktemp)
 cat /dev/stdin > "$inputfile" &
 
 local command=$(cat "$historyfile" | fzf \
