@@ -1,0 +1,30 @@
+#!/bin/zsh
+
+# The history file where past commands are written
+mkdir -p "$HOME/.cache/"
+local historyfile="$HOME/.cache/shepl"
+touch "$historyfile"
+
+# Capture the stdin and write to a file
+local inputfile="/tmp/shepl"
+cat /dev/stdin > "$inputfile" &
+
+local command=$(cat "$historyfile" | fzf \
+    --preview-window 'up:99%' \
+    --history "$historyfile" \
+    --print-query \
+    --no-info \
+    --prompt '> ' \
+    --header 'Construct your command. Press enter to finish.' \
+    --preview "cat $inputfile | eval {q}" \
+    --bind 'ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down' \
+    --bind 'tab:up,shift-tab:up' \
+    --bind 'alt-enter:replace-query,alt-bspace:clear-query' \
+    --cycle \
+)
+if [[ -z "$command" ]]; then
+    return
+fi
+
+eval "cat \"$inputfile\" | $command"
+
