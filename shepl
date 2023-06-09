@@ -1,5 +1,61 @@
 #!/bin/zsh
 
+read -r -d '' HELP_MESSAGE << END_HELP
+Usage: shepl [options] [default]
+
+A shell repl for rapid exploration & prototyping of commands. Pipe input to it,
+rapidly iterate on your command, and then return the output when done.
+
+WARNING: What you type will be executed, including rm -rf /.
+
+Options:
+    --echo|-e      Echo the constructed commanded instead of executing
+    --help|-h      Show this help message
+
+Key Bindings:
+    enter          Confirm the current command
+    ctrl-/         Show this help message in the preview window
+    ctrl-u         Scroll the preview window half page up
+    ctrl-d         Scroll the preview window half page down
+    ctrl-r         View history
+    tab            Scroll to next history item
+    shift-tab      Scroll to preview history item
+    alt-enter      Replace command with focused command from history
+    alt-bspace     Clear the current command
+
+    [Default FZF bindings including...]
+    ctrl-c         Exit
+
+Example:
+
+    Quickly select a subset of fields from a JSON file by piping it through shepl
+    and constructing a jq query in real time. When you are happy with the query,
+    confirm the command, and the output will be written to selection.json.
+    
+        $ cat example.json | shepl > selection.json
+
+    Prototype a regex expression by piping your input to shepl and using grep, rg,
+    or your choice of engine, and seeing the output live as you type. Using the
+    -e option, you can copy the final command to your clipboard when you are done.
+
+        $ cat lotr.txt | shepl -e | pbcopy
+        $ pbpaste
+        rg '.*Bilbo said.*' 
+END_HELP
+
+# Check if we should show the help messahe
+if [[ "$1" =~ '^(-h|--help)$' ]]; then
+    echo "$HELP_MESSAGE"
+    return
+fi
+
+# Check if we should echo or execute
+local ECHO=false
+if [[ "$1" =~ '^(-e|--echo)$' ]]; then
+    ECHO=true
+    shift
+fi
+
 # The history file where past commands are written
 mkdir -p "$HOME/.cache/"
 local historyfile="$HOME/.cache/shepl"
@@ -9,22 +65,39 @@ touch "$historyfile"
 local inputfile=$(mktemp)
 cat /dev/stdin > "$inputfile" &
 
-local command=$(cat "$historyfile" | fzf \
+# Flatten the default argument & escape it
+local flat_default=""
+for arg in ${@}; do
+    flat_default="$flat_default $(printf "%q" "$arg")"
+done
+
+# Abuse FZF for the windowing system...
+local command=$(echo | fzf \
     --preview-window 'up:99%' \
     --history "$historyfile" \
-    --print-query \
     --no-info \
+    --query "$flat_default " \
     --prompt '> ' \
-    --header 'Construct your command. Press enter to finish.' \
+    --header 'Construct your command. Enter to finish. Ctrl-/ for help.' \
     --preview "cat $inputfile | eval {q}" \
     --bind 'ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down' \
     --bind 'tab:up,shift-tab:up' \
     --bind 'alt-enter:replace-query,alt-bspace:clear-query' \
+    --bind 'enter:execute(echo {q})+abort' \
+    --bind "ctrl-/:preview(echo '$HELP_MESSAGE')" \
+    --bind "alt-/:preview(echo '$HELP_MESSAGE')" \
+    --bind "ctrl-r:reload(cat "$historyfile")+change-preview-window(up:80%)+enable-search" \
+    --pointer ' ' \
+    --disabled \
     --cycle \
 )
 if [[ -z "$command" ]]; then
     return
 fi
 
-eval "cat \"$inputfile\" | $command"
-
+# Echo if requested, otherwise execute
+if [[ "$ECHO" == true ]]; then
+    echo "$command"
+else
+    eval "cat \"$inputfile\" | $command"
+fi
