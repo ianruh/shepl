@@ -5,10 +5,17 @@
 " GitHub: https://github.com/ianruh
 " ============================================================================
 
-"if exists("g:loaded_shepl")
-"    finish
-"endif
-"let g:loaded_shepl = 1
+if exists("g:loaded_shepl")
+    finish
+endif
+let g:loaded_shepl = 1
+
+" Figure out the path to the plugin directory so we can use it later
+let s:plugindir = expand('<sfile>:p:h:h')
+
+" Config variables
+let g:shepl_width = 0.6
+let g:shepl_height = 0.6
 
 function Shepl() range
     " Save the select text to an input file
@@ -30,10 +37,7 @@ function Shepl() range
     " Output file name
     let s:output_file = tempname()
 
-    " Figure out the path to the plugin directory
-    let plugindir = expand('<sfile>:p:h')
-
-    let cmd = 'cat "'.s:input_file.'" | '.plugindir.'/shepl > "'.s:output_file.'"'
+    let cmd = 'cat "'.s:input_file.'" | '.s:plugindir.'/shepl > "'.s:output_file.'"'
     let jobopts = {}
     let jobopts['on_exit'] = funcref('s:shepl_callback')
     let config = {}
@@ -42,7 +46,6 @@ function Shepl() range
     let config['width'] = 0.6
     let config['height'] = 0.6
     let config['borderchars'] = '─│─│╭╮╯╰'
-    let config['autoclose'] = 0
     call floaterm#new(v:null, cmd, jobopts, config)
 
 endfunction

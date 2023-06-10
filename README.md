@@ -32,6 +32,11 @@ Plug 'ianruh/shepl'
 The only provided command is `Shepl`. Any selected text is passed to shepl's
 stdin and is replaced by the output of shepl.
 
+**Config Options**
+
+`g:shepl_width` - The width passed to floaterm.
+`g:shepl_height` - The height passed to floaterm.
+
 ## Examples
 
 ### Starlink Satellites
@@ -107,8 +112,3 @@ Jailing:
 
     MacOS - Using sandbox-exec
 ```
-
-2
-3
-3
-93
