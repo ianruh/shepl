@@ -18,12 +18,6 @@ $ chmod +x /usr/local/bin/shepl
 
 Or wherever you want to place it on your `PATH`.
 
-## Sandboxing
-
-### MacOS
-
-Using the `sandbox-exec` command, with `deny file-write*`.
-
 ## Examples
 
 ### Starlink Satellites
