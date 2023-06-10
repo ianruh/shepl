@@ -14,8 +14,8 @@ let g:loaded_shepl = 1
 let s:plugindir = expand('<sfile>:p:h:h')
 
 " Config variables
-let g:shepl_width = 0.6
-let g:shepl_height = 0.6
+let g:shepl_width = 0.8
+let g:shepl_height = 0.8
 
 function Shepl() range
     " Save the select text to an input file
@@ -43,8 +43,8 @@ function Shepl() range
     let config = {}
     let config['title'] = 'shepl'
     let config['name'] = 'shepl'
-    let config['width'] = 0.6
-    let config['height'] = 0.6
+    let config['width'] = g:shepl_width
+    let config['height'] = g:shepl_height
     let config['borderchars'] = '─│─│╭╮╯╰'
     call floaterm#new(v:null, cmd, jobopts, config)
 

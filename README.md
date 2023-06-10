@@ -34,10 +34,16 @@ stdin and is replaced by the output of shepl.
 
 **Config Options**
 
-`g:shepl_width` - The width passed to floaterm.
-`g:shepl_height` - The height passed to floaterm.
+- `g:shepl_width` - The width passed to floaterm.
+- `g:shepl_height` - The height passed to floaterm.
 
 ## Examples
+
+### Manipulate Markdown Tables
+
+You can use the vim plugin to quickly add computed columns to a markdown table.
+
+[![asciicast](https://asciinema.org/a/590744.svg)](https://asciinema.org/a/590744)
 
 ### Starlink Satellites
 
@@ -112,3 +118,10 @@ Jailing:
 
     MacOS - Using sandbox-exec
 ```
+
+## Markdown
+
+| First Header | Second Header |
+| ------------ | ------------- |
+|           21 | 929           |
+|           27 | Content Cell  |
