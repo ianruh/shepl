@@ -9,14 +9,28 @@ executing a destructive command. To mitigate this, all commands are run in a
 read only environment by default (this can be bypassed using the `--unsafe`
 flag). The implementation of this sandboxing is platform dependent.
 
-## Download
+## Install
+
+Just the executable:
 
 ```
-$ curl -o /usr/local/bin/shepl https://raw.githubusercontent.com/ianruh/shepl/main/shepl
-$ chmod +x /usr/local/bin/shepl
+curl -o /usr/local/bin/shepl https://raw.githubusercontent.com/ianruh/shepl/main/shepl
+chmod +x /usr/local/bin/shepl
 ```
 
 Or wherever you want to place it on your `PATH`.
+
+### Vim Plugin
+
+Requires [vim-floaterm](https://github.com/voldikss/vim-floaterm)
+
+```
+Plug 'voldikss/vim-floaterm'
+Plug 'ianruh/shepl'
+```
+
+The only provided command is `Shepl`. Any selected text is passed to shepl's
+stdin and is replaced by the output of shepl.
 
 ## Examples
 
@@ -93,3 +107,8 @@ Jailing:
 
     MacOS - Using sandbox-exec
 ```
+
+2
+3
+3
+93
