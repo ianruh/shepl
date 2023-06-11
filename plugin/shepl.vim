@@ -58,9 +58,6 @@ function! s:shepl_callback(job, data, event, opener) abort
     if filereadable(s:output_file)
         let output = readfile(s:output_file)
         if !empty(output)
-            "if has('nvim')
-            "    call floaterm#window#hide(bufnr('%'))
-            "endif
             call deletebufline(bufnr("%"), s:line_start, s:line_end)
             call append(s:line_start-1, output)
         endif

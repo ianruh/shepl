@@ -60,7 +60,7 @@ above.
 
 ### Command Templates
 
-**Query a Markdown Table Using SQL**
+**Query and Update a Markdown Table Using SQL**
 
 ```
 $ alias md-sql="shepl -t 'md2csv | csvsql --db sqlite:// --insert --query {q} | csvlook'"
@@ -75,13 +75,17 @@ $ cat example_table.md | md-sql
   escpaed (e.g. `'select * from stdin'`)
 - `md2csv` is a script to convert markdown tables to CSV. It lives in the `tools/`
   directory.
+- This is more useful as a vim command (see below) when you can select a table
+  in a markdown document and perform queries/edits on it.
 
 <details>
 <summary>Vim Command</summary>
 <br>
+
 ```
 :command -range MDSQL call Shepl('-t ''md2csv | csvsql --db sqlite:// --insert --query {q} | csvlook''')
 ```
+
 </details>
 
 ## Options
