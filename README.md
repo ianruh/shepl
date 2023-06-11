@@ -88,6 +88,22 @@ $ cat example_table.md | md-sql
 
 </details>
 
+**[cheat.sh](https://github.com/chubin/cheat.sh)**
+
+```
+function cht() { shepl -t 'curl -s http://cht.sh/$(echo {q} | sed "s/ /+/g")'; }
+```
+
+<details>
+<summary>Vim Command</summary>
+<br>
+
+```
+:command! -range Cheat call Shepl('-t ''curl -s http://cht.sh/$(echo {q} | sed "s/ /+/g")''')
+```
+
+</details>
+
 ## Options
 
 ```

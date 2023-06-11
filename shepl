@@ -201,6 +201,7 @@ local command=$(echo | fzf \
     --prompt '> ' \
     --header 'Construct your command. Enter to finish. Ctrl-/ for help.' \
     --preview "$preview_command_base $preview_command" \
+    --bind "ctrl-t:preview(echo $preview_command_base $preview_command)" \
     --bind 'ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down' \
     --bind 'tab:up,shift-tab:up' \
     --bind 'alt-enter:replace-query,alt-bspace:clear-query' \
