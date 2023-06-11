@@ -8,6 +8,9 @@ MACOS_SANDBOX_PROFILE="(version 1) (allow default) (deny file-write*) (allow fil
 # The default shell used when executing commands
 EXEC_SHELL="/bin/bash"
 
+# If the command should be interpreted as a template
+TEMPLATED=false
+
 # If unsafe exec should be allowed
 UNSAFE=false
 
@@ -24,36 +27,38 @@ while true; do
 
 if [[ "$1" =~ '^(-h|--help)$' ]]; then
 cat << END_HELP
-Usage: shepl [options] [default]
+Usage: shepl [options] [command]
 
 A shell repl for rapid exploration & prototyping of commands. Pipe input to it,
 rapidly iterate on your command, and then return the output when done.
 
 If you find yourself working with one tool a lot and don't want to type a couple
-extra characters, you can easily setup an alias using the default command:
+extra characters, you can easily setup an alias using a default command template:
     
-    $ alias jq-repl="shepl jq -C"
+    $ alias jq-repl="shepl --template jq -C {q}"
     $ cat example.json | jq-repl
 
 Options:
-    --echo|-e      Echo the constructed commanded instead of executing
-    --help|-h      Show this help message
-    --shell path   Path of the shell command to use. Default /bin/bash
-    --unsafe       Allow unsafe shell execution
+    --echo|-e       Echo the constructed commanded instead of executing
+    --help|-h       Show this help message
+    --template|-t   Treat the default command as a command template. '{q}' in
+                    the command is replaced by what is typed into the prompt.
+    --shell path    Path of the shell command to use. Default /bin/bash
+    --unsafe        Allow unsafe shell execution
 
 Key Bindings:
-    enter          Confirm the current command
-    ctrl-/         Show this help message in the preview window
-    ctrl-u         Scroll the preview window half page up
-    ctrl-d         Scroll the preview window half page down
-    ctrl-r         View history
-    tab            Scroll to next history item
-    shift-tab      Scroll to preview history item
-    alt-enter      Replace command with focused command from history
-    alt-bspace     Clear the current command
+    enter           Confirm the current command
+    ctrl-/          Show this help message in the preview window
+    ctrl-u          Scroll the preview window half page up
+    ctrl-d          Scroll the preview window half page down
+    ctrl-r          View history
+    tab             Scroll to next history item
+    shift-tab       Scroll to preview history item
+    alt-enter       Replace command with focused command from history
+    alt-bspace      Clear the current command
 
     [Default FZF bindings including...]
-    ctrl-c         Exit
+    ctrl-c          Exit
 
 Example:
 
@@ -88,19 +93,25 @@ return
 # Check if we should echo or execute
 elif [[ "$1" =~ '^(-e|--echo)$' ]]; then
     ECHO=true
-    original_flags=" '$1'"
+    original_flags="$original_flags $1"
     shift
 
 # Set the shell path if provided (should follow the flag)
 elif [[ "$1" =~ '^--shell$' ]]; then
     EXEC_SHELL="$2"
-    original_flags=" '$1' '$2'"
+    original_flags="$original_flags $1 '$2'"
     shift 2
 
 # Set if unsafe exec should be allowed
 elif [[ "$1" =~ '^--unsafe$' ]]; then
     UNSAFE=true
-    original_flags=" '$1'"
+    original_flags="$original_flags $1"
+    shift
+
+# Set if the default command should be a template
+elif [[ "$1" =~ '^(-t|--template)$' ]]; then
+    TEMPLATED=true
+    original_flags="$original_flags $1"
     shift
 
 # If nothing has matched, then we are done with options, so break the loop
@@ -109,6 +120,10 @@ else
 fi
 
 done # Options while loop
+
+# Trim leading whitespace. Without this, passing to shepl --exec breaks because
+# the options above aren't matched and get interpreted as a command.
+original_flags=$(echo "$original_flags" | xargs echo)
 
 ########### Command Execution #############
 # Handle this outside of the options loop as it is kinda a special case
@@ -124,7 +139,7 @@ if [[ "$1" =~ '^--exec$' ]]; then
 
     # Detect the system type. If unsafe, do that.
     if [[ "$UNSAFE" == true ]]; then 
-        cat "$inputfile" | eval "$@"
+        cat "$inputfile" | "$EXEC_SHELL" -c "$@"
     elif [[ $(uname -s) =~ '.*Darwin.*' ]]; then
         cat "$inputfile" | sandbox-exec -p "$MACOS_SANDBOX_PROFILE" "$EXEC_SHELL" -c "$@"
     else
@@ -146,25 +161,50 @@ touch "$historyfile"
 local inputfile=$(mktemp)
 cat /dev/stdin > "$inputfile" &
 
-# Flatten the default argument & escape it
-local flat_default=""
-for arg in ${@}; do
-    flat_default="$flat_default $(printf "%q" "$arg")"
-done
+# Flatten the default command arguments & escape it if passed as multiple, otherwise
+# we can just place it in
+local flat_default_command=""
+if [ "$#" -ge 2 ]; then
+    for arg in ${@}; do
+        flat_default_command="$flat_default_command $(printf "%q" "$arg")"
+    done
+else
+    flat_default_command="$1"
+fi
+
+
+# The default preview command
+local preview_command_base="shepl $original_flags --exec '$inputfile'"
+local preview_command="{q}"
+if [[ "$TEMPLATED" == true ]]; then
+    preview_command=$(printf "%q" "$flat_default_command")
+    # This is kinda a hack, but the escaping above will also escape {q}, which prevents
+    # fzf from replacing it with the query. So we explicitly unescape it here. Since we
+    # double escape when passed seperately, and single when as a string, we need this
+    # branch.
+    if [ "$#" -ge 2 ]; then
+        preview_command=$(echo "$preview_command" | sed 's/\\\\{q\\\\}/{q}/g')
+    else
+        preview_command=$(echo "$preview_command" | sed 's/\\{q\\}/{q}/g')
+    fi
+
+    # Don't start with anything
+    flat_default_command=""
+fi
 
 # Abuse FZF for the windowing system...
 local command=$(echo | fzf \
     --preview-window 'up:99%' \
     --history "$historyfile" \
     --no-info \
-    --query "$flat_default " \
+    --query "$flat_default_command" \
     --prompt '> ' \
     --header 'Construct your command. Enter to finish. Ctrl-/ for help.' \
-    --preview "shepl $original_flags --exec '$inputfile' {q}" \
+    --preview "$preview_command_base $preview_command" \
     --bind 'ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down' \
     --bind 'tab:up,shift-tab:up' \
     --bind 'alt-enter:replace-query,alt-bspace:clear-query' \
-    --bind 'enter:execute(echo {q})+abort' \
+    --bind "enter:execute(echo $preview_command)+abort" \
     --bind "ctrl-/:preview(shepl --help)" \
     --bind "alt-/:preview(shepl --help)" \
     --bind "ctrl-r:reload(cat "$historyfile")+change-preview-window(up:80%)+enable-search" \
@@ -181,5 +221,6 @@ fi
 if [[ "$ECHO" == true ]]; then
     echo "$command"
 else
-    shepl $original_flags --exec "$inputfile" "$command"
+    # We pipe it to cat for programs that look at the type of stdout (like ls)
+    shepl $original_flags --exec "$inputfile" "$command" | cat
 fi

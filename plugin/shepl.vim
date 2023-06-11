@@ -17,7 +17,7 @@ let s:plugindir = expand('<sfile>:p:h:h')
 let g:shepl_width = 0.8
 let g:shepl_height = 0.8
 
-function Shepl() range
+function Shepl(...) range
     " Save the select text to an input file
     let s:input_file = tempname()
 
@@ -37,7 +37,11 @@ function Shepl() range
     " Output file name
     let s:output_file = tempname()
 
-    let cmd = 'cat "'.s:input_file.'" | '.s:plugindir.'/shepl > "'.s:output_file.'"'
+    let cmd = 'cat "'.s:input_file.'" | '.s:plugindir.'/shepl '
+    if a:0 > 0
+        let cmd = cmd . a:1
+    endif
+    let cmd = cmd . ' > "'.s:output_file.'"'
     let jobopts = {}
     let jobopts['on_exit'] = funcref('s:shepl_callback')
     let config = {}
@@ -63,4 +67,4 @@ function! s:shepl_callback(job, data, event, opener) abort
     endif
 endfunction
 
-command -range Shepl call Shepl()
+command -range -nargs=? Shepl call Shepl(<f-args>)
